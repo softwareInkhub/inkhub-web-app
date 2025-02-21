@@ -37,25 +37,29 @@ export async function generateStaticParams() {
   }
 }
 
-export async function GET() {
+interface RouteContext {
+  params: {
+    orderId: string;
+  };
+}
+
+export async function GET(
+  request: Request,
+  context: RouteContext & { params: Promise<RouteContext['params']> }
+) {
   try {
+    const { orderId } = await context.params;
     const query = `
-      query {
-        orders(first: 100) {
-          edges {
-            node {
+      query GetOrderFulfillments($orderId: ID!) {
+        node(id: $orderId) {
+          ... on Order {
+            id
+            fulfillments {
               id
-              fulfillments(first: 100) {
-                edges {
-                  node {
-                    id
-                    status
-                    trackingInfo {
-                      number
-                      url
-                    }
-                  }
-                }
+              status
+              trackingInfo {
+                number
+                url
               }
             }
           }
@@ -63,38 +67,11 @@ export async function GET() {
       }
     `;
 
-    const data = await storefrontClient.request<{
-      orders: {
-        edges: Array<{
-          node: {
-            id: string;
-            fulfillments: {
-              edges: Array<{
-                node: {
-                  id: string;
-                  status: string;
-                  trackingInfo: Array<{
-                    number: string;
-                    url: string;
-                  }>;
-                };
-              }>;
-            };
-          };
-        }>;
-      };
-    }>(query);
+    const data = await storefrontClient.request(query, {
+      orderId: `gid://shopify/Order/${orderId}`
+    });
 
-    const orders = data.orders.edges.map(({ node }) => ({
-      orderId: node.id.split('/').pop(),
-      fulfillments: node.fulfillments.edges.map(({ node: fulfillment }) => ({
-        id: fulfillment.id,
-        status: fulfillment.status,
-        tracking_info: fulfillment.trackingInfo
-      }))
-    }));
-
-    return NextResponse.json({ orders });
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching fulfillments:', error);
     return NextResponse.json(

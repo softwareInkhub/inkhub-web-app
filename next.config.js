@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['cdn.shopify.com'], // Add your Shopify CDN domain
+    domains: [
+      'cdn.shopify.com',
+      'ink7.myshopify.com' // Replace with your actual Shopify domain
+    ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -16,9 +19,13 @@ const nextConfig = {
   output: 'standalone',
   distDir: 'dist',
   trailingSlash: true,
-  optimizeFonts: true,
-  experimental: {
-    optimizeFonts: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*'
+      }
+    ];
   }
 }
 

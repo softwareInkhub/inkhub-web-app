@@ -37,40 +37,38 @@ export async function generateStaticParams() {
   }
 }
 
-export async function GET() {
+interface RouteContext {
+  params: {
+    orderId: string;
+  };
+}
+
+export async function GET(
+  request: Request,
+  context: RouteContext & { params: Promise<RouteContext['params']> }
+) {
   try {
+    const { orderId } = await context.params;
+    
     const query = `
-      query {
-        orders(first: 100) {
-          edges {
-            node {
-              id
-              email
-            }
+      query GetOrder($orderId: ID!) {
+        node(id: $orderId) {
+          ... on Order {
+            id
+            email
+            customerUrl
           }
         }
       }
     `;
 
-    const data = await storefrontClient.request<{
-      orders: {
-        edges: Array<{
-          node: {
-            id: string;
-            email: string;
-          };
-        }>;
-      };
-    }>(query);
+    const data = await storefrontClient.request(query, {
+      orderId: `gid://shopify/Order/${orderId}`
+    });
 
-    const orders = data.orders.edges.map(({ node }) => ({
-      orderId: node.id.split('/').pop(),
-      email: node.email
-    }));
-
-    return NextResponse.json({ orders });
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('Error fetching order:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
