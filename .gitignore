@@ -1,0 +1,8 @@
+# Build and cache files
+dist/
+.next/
+node_modules/
+.cache/
+*.pack
+
+.env.local
