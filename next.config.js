@@ -15,7 +15,11 @@ const nextConfig = {
   // Change output to 'standalone' instead of 'export'
   output: 'standalone',
   distDir: 'dist',
-  trailingSlash: true
+  trailingSlash: true,
+  optimizeFonts: true,
+  experimental: {
+    optimizeFonts: true,
+  }
 }
 
 module.exports = nextConfig

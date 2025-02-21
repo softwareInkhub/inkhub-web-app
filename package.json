@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "build": "npm run build",
+    "start": "npm run dev",
     "lint": "next lint",
-    "build:capacitor": "next build && npx cap sync"
+    "build:capacitor": "npm run build && npx cap sync"
   },
   "dependencies": {
     "@algolia/autocomplete-js": "^1.17.8",
