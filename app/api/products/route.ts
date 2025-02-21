@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import { storefrontClient } from '@/utils/shopify';
 
+// Add interface for the response type
+interface CollectionResponse {
+  collection: {
+    id: string;
+    title: string;
+    handle: string;
+    products: {
+      edges: Array<{
+        node: {
+          id: string;
+          title: string;
+          // ... other product fields
+        };
+      }>;
+    };
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,7 +68,7 @@ export async function GET(request: Request) {
       }
     `;
 
-    const data = await storefrontClient.request(query);
+    const data = await storefrontClient.request<CollectionResponse>(query);
 
     if (!data?.collection) {
       return NextResponse.json({ error: 'Collection not found' }, { status: 404 });

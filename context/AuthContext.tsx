@@ -11,6 +11,8 @@ interface AuthContextType {
   isLoading: boolean;
   isInitialized: boolean;
   handleLogin: (redirectTo?: string) => void;
+  signInWithPhone: (phone: string) => Promise<void>;
+  verifyOtp: (otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +21,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   isInitialized: false,
   handleLogin: () => {},
+  signInWithPhone: async () => {},
+  verifyOtp: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -61,7 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, isLoading, isInitialized, handleLogin }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userProfile, 
+      isLoading, 
+      isInitialized, 
+      handleLogin,
+      signInWithPhone: async (phone: string) => {
+        // Implement phone sign in logic
+      },
+      verifyOtp: async (otp: string) => {
+        // Implement OTP verification logic
+      }
+    }}>
       {children}
     </AuthContext.Provider>
   );
