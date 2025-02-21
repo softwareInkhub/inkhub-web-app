@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ProductCard from '@/components/ProductCard';
+import SimpleProductCard from '@/components/SimpleProductCard';
 
 interface CollectionTabSectionProps {
   collections: any[];
@@ -80,30 +80,42 @@ export default function CollectionTabSection({ collections }: CollectionTabSecti
         ))}
       </div>
 
-      {/* Products Horizontal Scroll */}
+      {/* Products Grid */}
       <AnimatePresence mode="wait">
         <motion.div
           key={selectedCollection?.id}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.2 }}
           className="relative"
         >
-          <div className="flex overflow-x-auto gap-4 md:gap-6 scrollbar-hide pb-4">
+          <div className="flex overflow-x-auto gap-2 sm:gap-3 md:gap-4 scrollbar-hide pb-4">
             {isLoading ? (
               // Loading skeletons
               [...Array(8)].map((_, i) => (
-                <div key={i} className="animate-pulse flex-shrink-0 w-[calc(100vw/3.5)] md:w-[calc(100vw/7)]">
-                  <div className="aspect-square bg-gray-200 rounded-lg mb-4" />
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div 
+                  key={i} 
+                  className="animate-pulse flex-shrink-0 w-[120px] sm:w-[160px] md:w-[180px]"
+                >
+                  <div className="bg-gray-200 rounded-xl">
+                    <div className="aspect-square rounded-t-xl bg-gray-300" />
+                    <div className="p-2 sm:p-3 bg-gray-100">
+                      <div className="h-3 sm:h-4 bg-gray-300 rounded w-3/4 mb-2" />
+                      <div className="h-3 sm:h-4 bg-gray-300 rounded w-1/2" />
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (
               selectedCollection?.products?.map((product: any) => (
-                <div key={product.id} className="flex-shrink-0 w-[calc(100vw/3.5)] md:w-[calc(100vw/7)]">
-                  <ProductCard 
+                <div 
+                  key={product.id} 
+                  className="flex-shrink-0 w-[120px] sm:w-[160px] md:w-[180px]"
+                >
+                  <SimpleProductCard 
                     product={product}
+                    className="w-full"
                   />
                 </div>
               ))

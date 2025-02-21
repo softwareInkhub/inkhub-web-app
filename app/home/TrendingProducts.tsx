@@ -1,6 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
-import ProductCard from '@/components/ProductCard';
+import SimpleProductCard from '@/components/SimpleProductCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 
@@ -63,30 +63,57 @@ export default function TrendingProducts({ products }: TrendingProductsProps) {
           <p className="text-gray-600 mt-2">Discover our most popular designs</p>
         </div>
 
-        <div className="flex overflow-x-auto gap-4 md:gap-6 scrollbar-hide pb-4">
-          {products.map((product) => (
-            <div 
-              key={product.node.id} 
-              className="flex-shrink-0 w-[calc(100vw/3.5)] md:w-[calc(100vw/6)]"
+        {/* Scroll Container with Navigation Arrows */}
+        <div className="relative">
+          {showLeftArrow && (
+            <button
+              onClick={() => scroll('left')}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10
+                       bg-white p-2 rounded-full shadow-md hover:scale-110 transition-transform"
             >
-              <ProductCard 
-                product={{
-                  id: product.node.id,
-                  handle: product.node.handle,
-                  title: product.node.title,
-                  price: {
-                    amount: product.node.priceRange.minVariantPrice.amount,
-                    currencyCode: product.node.priceRange.minVariantPrice.currencyCode
-                  },
-                  image: {
-                    url: product.node.images?.edges[0]?.node?.url || '',
-                    altText: product.node.title
-                  },
-                  variantId: product.node.variants?.edges[0]?.node?.id
-                }}
-              />
-            </div>
-          ))}
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+
+          {showRightArrow && (
+            <button
+              onClick={() => scroll('right')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10
+                       bg-white p-2 rounded-full shadow-md hover:scale-110 transition-transform"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+
+          <div 
+            ref={scrollContainerRef}
+            className="flex overflow-x-auto gap-2 sm:gap-3 md:gap-4 scrollbar-hide pb-4"
+          >
+            {products.map((product) => (
+              <div 
+                key={product.node.id} 
+                className="flex-shrink-0 w-[120px] sm:w-[160px] md:w-[180px]"
+              >
+                <SimpleProductCard 
+                  product={{
+                    id: product.node.id,
+                    handle: product.node.handle,
+                    title: product.node.title,
+                    price: {
+                      amount: product.node.priceRange.minVariantPrice.amount,
+                      currencyCode: product.node.priceRange.minVariantPrice.currencyCode
+                    },
+                    image: {
+                      url: product.node.images?.edges[0]?.node?.url || '',
+                      altText: product.node.title
+                    },
+                    variantId: product.node.variants?.edges[0]?.node?.id
+                  }}
+                  className="w-full"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

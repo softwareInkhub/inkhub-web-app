@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import ProductCard from './ProductCard';
+import SimpleProductCard from './SimpleProductCard';
 
 interface Collection {
   id: string;
@@ -96,7 +97,10 @@ export default function CollectionCircles({ collections }: CollectionCirclesProp
           >
             <motion.div 
               className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-50 
-                ring-1 ring-black/[0.08] hover:ring-2 hover:ring-black/20 transition-all"
+                       ring-1 ring-black/[0.08] hover:ring-2 hover:ring-black/20
+                       shadow-[0_4px_10px_-2px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.05)]
+                       hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.15),0_4px_8px_-4px_rgba(0,0,0,0.08)]
+                       transition-all duration-300 transform-gpu"
               animate={activeIndex === index ? {
                 scale: [1, 0.9, 1],
                 transition: { duration: 0.3 }
@@ -173,7 +177,7 @@ export default function CollectionCircles({ collections }: CollectionCirclesProp
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {isLoading ? (
                     [...Array(8)].map((_, i) => (
                       <motion.div 
@@ -183,8 +187,13 @@ export default function CollectionCircles({ collections }: CollectionCirclesProp
                         transition={{ delay: i * 0.1 }}
                         className="animate-pulse"
                       >
-                        <div className="aspect-square bg-gray-200 rounded-lg mb-4" />
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                        <div className="bg-gray-200 rounded-lg">
+                          <div className="aspect-square rounded-t-lg bg-gray-300" />
+                          <div className="p-2 bg-gray-100">
+                            <div className="h-3 bg-gray-300 rounded w-3/4 mb-2" />
+                            <div className="h-3 bg-gray-300 rounded w-1/2" />
+                          </div>
+                        </div>
                       </motion.div>
                     ))
                   ) : (
@@ -195,7 +204,7 @@ export default function CollectionCircles({ collections }: CollectionCirclesProp
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
-                        <ProductCard product={product} />
+                        <SimpleProductCard product={product} className="w-full" />
                       </motion.div>
                     ))
                   )}

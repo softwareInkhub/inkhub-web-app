@@ -4,7 +4,7 @@ const nextConfig = {
     domains: [
       'cdn.shopify.com',
       'ink7.myshopify.com', // Replace with your actual Shopify domain
-      '4ddd-223-185-60-244.ngrok-free.app'
+      'c7c0-223-185-60-244.ngrok-free.app'
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

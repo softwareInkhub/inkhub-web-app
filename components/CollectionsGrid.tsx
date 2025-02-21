@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import ProductCard from './ProductCard';
+import SimpleProductCard from './SimpleProductCard';
 
 interface Collection {
   id: string;
@@ -166,7 +167,7 @@ export default function CollectionsGrid({ collections, className = '', gridCols 
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {isLoading ? (
                     [...Array(8)].map((_, i) => (
                       <motion.div 
@@ -176,8 +177,13 @@ export default function CollectionsGrid({ collections, className = '', gridCols 
                         transition={{ delay: i * 0.1 }}
                         className="animate-pulse"
                       >
-                        <div className="aspect-square bg-gray-200 rounded-lg mb-4" />
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                        <div className="bg-gray-200 rounded-lg">
+                          <div className="aspect-square rounded-t-lg bg-gray-300" />
+                          <div className="p-2 bg-gray-100">
+                            <div className="h-3 bg-gray-300 rounded w-3/4 mb-2" />
+                            <div className="h-3 bg-gray-300 rounded w-1/2" />
+                          </div>
+                        </div>
                       </motion.div>
                     ))
                   ) : (
@@ -188,7 +194,7 @@ export default function CollectionsGrid({ collections, className = '', gridCols 
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
-                        <ProductCard product={product} />
+                        <SimpleProductCard product={product} className="w-full" />
                       </motion.div>
                     ))
                   )}

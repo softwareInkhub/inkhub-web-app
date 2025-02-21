@@ -4,6 +4,7 @@ import { getCollections } from '@/lib/shopify';
 import MarqueeText from '@/components/MarqueeText';
 import LandscapeImage from '@/components/LandscapeImage';
 import { Suspense } from 'react';
+import ImageWithText from '@/components/ImageWithText';
 
 export default async function Home() {
   const [featuredProducts, collections] = await Promise.all([
@@ -28,6 +29,16 @@ export default async function Home() {
           alt="Welcome to our store"
         />
       </Suspense>
+      <ImageWithText
+        title="how does"
+        subtitle="it work?"
+        description="Change up your look, play with your style, and experiment confidently with Inkbox, the ultimate self-expression accessory! Simply Prime, Place, and Peel, and in 24 hours your next expression will be fully developed and ready to make a bold statement."
+        buttonText="LEARN MORE"
+        buttonLink="/how-it-works"
+        imageSrc="/path-to-your-image.jpg"
+        imageAlt="How Temporary Tattoos Work"
+        textColor="yellow-400"
+      />
     </div>
   );
 }

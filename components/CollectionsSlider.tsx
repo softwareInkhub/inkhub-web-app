@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import ProductCard from './ProductCard';
+import SimpleProductCard from './SimpleProductCard';
 import type { ShopifyCollection } from '@/types/shopify';
 
 interface CollectionsSliderProps {
@@ -79,26 +79,53 @@ export default function CollectionsSlider({
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {selectedProducts.map((product: any) => (
-          <ProductCard
-            key={product.node.id}
-            product={{
-              id: product.node.id,
-              handle: product.node.handle,
-              title: product.node.title,
-              price: {
-                amount: product.node.priceRange.minVariantPrice.amount,
-                currencyCode: product.node.priceRange.minVariantPrice.currencyCode
-              },
-              image: {
-                url: product.node.images?.edges[0]?.node?.url || '',
-                altText: product.node.title
-              },
-              variantId: product.node.variants?.edges[0]?.node?.id
-            }}
-          />
+          <div key={product.node.id}>
+            <SimpleProductCard
+              product={{
+                id: product.node.id,
+                handle: product.node.handle,
+                title: product.node.title,
+                price: {
+                  amount: product.node.priceRange.minVariantPrice.amount,
+                  currencyCode: product.node.priceRange.minVariantPrice.currencyCode
+                },
+                image: {
+                  url: product.node.images?.edges[0]?.node?.url || '',
+                  altText: product.node.title
+                },
+                variantId: product.node.variants?.edges[0]?.node?.id
+              }}
+              className="w-full"
+            />
+          </div>
         ))}
+
+        {/* Loading State */}
+        {isLoading && (
+          [...Array(10)].map((_, i) => (
+            <div 
+              key={`skeleton-${i}`} 
+              className="animate-pulse"
+            >
+              <div className="bg-gray-200 rounded-lg">
+                <div className="aspect-square rounded-t-lg bg-gray-300" />
+                <div className="p-2 bg-gray-100">
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-300 rounded w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="col-span-full text-center text-red-500">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
