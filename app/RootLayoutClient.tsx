@@ -28,7 +28,7 @@ export default function RootLayoutClient({
             <WishlistProvider>
               <ThemeProvider>
                 {content}
-                <Toaster position="bottom-right" />
+                <Toaster position="bottom-center" />
               </ThemeProvider>
             </WishlistProvider>
           </CartProvider>

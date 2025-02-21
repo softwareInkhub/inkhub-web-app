@@ -1,86 +1,108 @@
 'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from '@/utils/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 interface AuthContextType {
-  user: any;
-  userProfile: any;
+  user: any | null;
+  userProfile: any | null;
   isLoading: boolean;
   isInitialized: boolean;
-  handleLogin: (redirectTo?: string) => void;
-  signInWithPhone: (phone: string) => Promise<void>;
-  verifyOtp: (otp: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
   isLoading: true,
   isInitialized: false,
-  handleLogin: () => {},
-  signInWithPhone: async () => {},
-  verifyOtp: async () => {},
+  logout: async () => {}
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
+  const logout = async () => {
+    try {
+      // First clear all cookies and session
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      Cookies.remove('token');
+      Cookies.remove('session');
       
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          setUserProfile(userDoc.data());
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
-      } else {
-        setUserProfile(null);
-      }
+      // Then sign out from Firebase
+      await signOut(auth);
       
-      setIsLoading(false);
-      setIsInitialized(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogin = (redirectTo: string = '/account') => {
-    if (user) {
-      // If already logged in, redirect directly
-      router.push(redirectTo);
-    } else {
-      // If not logged in, redirect to account page which will handle the auth flow
-      router.push('/account');
+      // Clear state
+      setUserProfile(null);
+      setUser(null);
+      
+      // Navigate home and refresh
+      router.replace('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      userProfile, 
-      isLoading, 
-      isInitialized, 
-      handleLogin,
-      signInWithPhone: async (phone: string) => {
-        // Implement phone sign in logic
-      },
-      verifyOtp: async (otp: string) => {
-        // Implement OTP verification logic
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      try {
+        setUser(user);
+        setIsInitialized(true);
+        
+        if (user) {
+          // Get fresh token
+          const token = await user.getIdToken(true);
+          
+          // Update session
+          await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: token }),
+          });
+          
+          // Set up Firestore listener
+          const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (doc) => {
+            if (doc.exists()) {
+              setUserProfile(doc.data());
+            }
+            setIsLoading(false);
+          });
+          
+          return () => unsubProfile();
+        } else {
+          // Clear session
+          await fetch('/api/auth/session', { method: 'DELETE' });
+          setUserProfile(null);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        setIsLoading(false);
       }
-    }}>
+    });
+
+    return () => unsubAuth();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, userProfile, isLoading, isInitialized, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}; 

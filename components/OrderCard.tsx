@@ -4,6 +4,7 @@ import { ShoppingBag, Truck, Package, Clock, MessageCircle } from 'lucide-react'
 import Image from 'next/image';
 import OrderSummaryModal from './OrderSummaryModal';
 import TrackOrderModal from './TrackOrderModal';
+import { toast } from 'react-hot-toast';
 
 interface OrderCardProps {
   order: any;
@@ -13,23 +14,40 @@ export default function OrderCard({ order }: OrderCardProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
   const [fulfillmentDetails, setFulfillmentDetails] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchFulfillmentDetails = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/orders/${order.id}/fulfillments`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch fulfillment details');
+        }
+        
         const data = await response.json();
         if (data.fulfillments?.[0]) {
           setFulfillmentDetails(data.fulfillments[0]);
         }
       } catch (error) {
         console.error('Error fetching fulfillment:', error);
+        toast.error('Unable to load tracking details');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     if (order.fulfillment_status === 'fulfilled') {
       fetchFulfillmentDetails();
+    } else {
+      setIsLoading(false);
     }
+
+    return () => {
+      // Cleanup if needed
+      setFulfillmentDetails(null);
+    };
   }, [order.id, order.fulfillment_status]);
 
   const displayImage = order.line_items[0]?.image || '/placeholder.png';

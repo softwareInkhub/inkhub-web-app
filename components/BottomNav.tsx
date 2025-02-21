@@ -69,16 +69,6 @@ export default function BottomNav() {
       label: 'Support',
       href: '/help',
       icon: HelpCircle,
-    },
-    {
-      label: 'Search',
-      href: '/search',
-      icon: Search,
-    },
-    {
-      label: 'Account',
-      href: '/account',
-      icon: User,
     }
   ];
 

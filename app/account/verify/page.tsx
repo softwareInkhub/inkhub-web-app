@@ -12,12 +12,11 @@ export default function VerifyPage() {
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
 
   useEffect(() => {
-    // Get stored contact info
     const storedMethod = sessionStorage.getItem('authMethod') as 'phone' | 'email';
     const storedContact = sessionStorage.getItem('contactInfo');
 
     if (!storedContact) {
-      router.replace('/account');
+      router.replace('/'); // Redirect to home instead of account
       return;
     }
 

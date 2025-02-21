@@ -20,7 +20,7 @@ import { db } from '@/utils/firebase';
 import AddressForm from '@/components/AddressForm';
 import { auth } from '@/utils/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import LoginModal from '@/components/LoginModal';
+import LoginBottomSheet from '@/components/LoginBottomSheet';
 
 // Add interface for Address type
 interface Address {
@@ -773,12 +773,12 @@ export default function CartPage() {
       )}
 
       {/* Login Modal */}
-      <LoginModal 
+      <LoginBottomSheet 
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLoginSuccess={() => {
           setShowLoginModal(false);
-          handlePlaceOrder(); // Continue with order after successful login
+          handlePlaceOrder();
         }}
       />
     </div>

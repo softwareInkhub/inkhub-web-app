@@ -56,6 +56,8 @@ export default function Navbar({ collections = [] }: NavbarProps) {
 
   const handleProfileClick = () => {
     if (user) {
+      console.log('Profile clicked, attempting navigation');
+      // Use push instead of replace and remove the timeout
       router.push('/account');
     } else {
       setShowLoginModal(true);

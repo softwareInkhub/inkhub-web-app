@@ -53,7 +53,7 @@ interface Address {
 
 export default function AccountPage() {
   const router = useRouter();
-  const { user, userProfile, isLoading, isInitialized } = useAuth();
+  const { user, userProfile, isLoading, isInitialized, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -81,6 +81,7 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const { activeTab, setActiveTab } = useTab();
+  const [mounted, setMounted] = useState(false);
 
   // Define tab order for swipe navigation
   const tabOrder: Tab[] = ['profile', 'addresses', 'orders', 'support'];
@@ -106,11 +107,18 @@ export default function AccountPage() {
   });
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace('/account/login');
-      return;
-    }
+    setMounted(true);
+  }, []);
 
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    console.log('Account page mounted', { user, isLoading, userProfile });
+    
     if (userProfile) {
       setFormData({
         firstName: userProfile.firstName || '',
@@ -147,15 +155,7 @@ export default function AccountPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-      toast.success('Logged out successfully');
-      router.replace('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to logout');
-    }
+    await logout();
   };
 
   const tabs = [
@@ -374,8 +374,7 @@ export default function AccountPage() {
     }
   }, [activeTab, userProfile?.phone]);
 
-  // Show loading state while auth is initializing
-  if (!isInitialized || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-6 h-6 border-2 border-black border-t-transparent rounded-full" />
@@ -383,13 +382,9 @@ export default function AccountPage() {
     );
   }
 
-  // Redirect if not authenticated after initialization
-  if (isInitialized && !user) {
-    router.replace('/account/login');
+  if (!user || !userProfile) {
     return null;
   }
-
-  if (!user || !userProfile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">

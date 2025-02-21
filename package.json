@@ -27,6 +27,7 @@
     "@tensorflow-models/body-pix": "^2.2.1",
     "@tensorflow-models/handpose": "^0.1.0",
     "@tensorflow/tfjs": "^4.22.0",
+    "@types/js-cookie": "^3.0.6",
     "@use-gesture/react": "^10.3.1",
     "aframe": "^1.6.0",
     "algoliasearch": "^5.18.0",
@@ -38,6 +39,7 @@
     "framer-motion": "^11.15.0",
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
+    "js-cookie": "^3.0.5",
     "libphonenumber-js": "^1.11.17",
     "lodash": "^4.17.21",
     "lucide-react": "^0.469.0",
@@ -53,11 +55,11 @@
     "react-otp-input": "^3.1.1",
     "react-phone-input-2": "^2.15.1",
     "react-swipeable": "^7.0.2",
+    "sharp": "^0.32.0",
     "shopify-buy": "^2.22.0",
     "swiper": "^11.2.0",
     "tailwind-merge": "^2.6.0",
-    "three": "^0.172.0",
-    "sharp": "^0.32.0"
+    "three": "^0.172.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

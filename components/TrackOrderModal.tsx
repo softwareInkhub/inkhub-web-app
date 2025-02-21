@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { X, Package, Truck, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 interface Order {
   id: string;
@@ -53,29 +53,54 @@ interface Fulfillment {
 interface TrackOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: Order;
+  order: any; // TODO: Add proper type
 }
 
 export default function TrackOrderModal({ isOpen, onClose, order }: TrackOrderModalProps) {
-  const [fulfillments, setFulfillments] = useState<Fulfillment[]>([]);
+  const [fulfillments, setFulfillments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
+    const fetchFulfillmentDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/orders/${order.id}/fulfillments`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch tracking details');
+        }
+
+        const data = await response.json();
+        
+        if (mounted) {
+          setFulfillments(data.fulfillments || []);
+        }
+      } catch (error) {
+        console.error('Error fetching fulfillment details:', error);
+        if (mounted) {
+          setError('Unable to load tracking details');
+          toast.error('Failed to load tracking information');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     if (isOpen && order.id) {
       fetchFulfillmentDetails();
     }
-  }, [isOpen, order.id]);
 
-  const fetchFulfillmentDetails = async () => {
-    try {
-      const response = await axios.get(`/api/orders/${order.id}/fulfillments`);
-      setFulfillments(response.data.fulfillments);
-    } catch (error) {
-      console.error('Error fetching fulfillment details:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, order.id]);
 
   if (!isOpen) return null;
 

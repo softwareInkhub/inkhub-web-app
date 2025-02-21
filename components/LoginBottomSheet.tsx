@@ -1,9 +1,13 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { X, ArrowRight, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import OtpInput from 'react-otp-input';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, db } from '@/utils/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { toast } from 'react-hot-toast';
 
 interface LoginBottomSheetProps {
   isOpen: boolean;
@@ -11,36 +15,241 @@ interface LoginBottomSheetProps {
   onLoginSuccess: () => void;
 }
 
+declare global {
+  interface Window {
+    OTPCredential: any;
+  }
+  interface CredentialRequestOptions {
+    otp?: { transport: string[] };
+  }
+}
+
 export default function LoginBottomSheet({ isOpen, onClose, onLoginSuccess }: LoginBottomSheetProps) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
-  const { signInWithPhone, verifyOtp } = useAuth();
+  const [isAutoVerifying, setIsAutoVerifying] = useState(false);
+  const [autofilledOtp, setAutofilledOtp] = useState<string | null>(null);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [isInCooldown, setIsInCooldown] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const cooldownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset state when modal closes
+      setPhone('');
+      setOtp('');
+      setStep('phone');
+      setLoading(false);
+      setRetryCount(0);
+      setIsInCooldown(false);
+      setCooldownTime(0);
+      if (cooldownTimeoutRef.current) {
+        clearTimeout(cooldownTimeoutRef.current);
+      }
+    }
+  }, [isOpen]);
+
+  const setupRecaptcha = async () => {
+    try {
+      // Clear existing verifier
+      if (window.recaptchaVerifier) {
+        await window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log('reCAPTCHA verified');
+        },
+        'expired-callback': () => {
+          toast.error('reCAPTCHA expired. Please try again.');
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+          }
+        }
+      });
+
+      await verifier.render();
+      window.recaptchaVerifier = verifier;
+      return verifier;
+    } catch (error) {
+      console.error('Error setting up reCAPTCHA:', error);
+      throw error;
+    }
+  };
+
+  const startCooldown = (attempts: number) => {
+    // Exponential backoff: 30s -> 1m -> 2m -> 5m -> 10m
+    const cooldownDurations = [30, 60, 120, 300, 600];
+    const cooldownSeconds = cooldownDurations[Math.min(attempts, cooldownDurations.length - 1)];
+    
+    setIsInCooldown(true);
+    setCooldownTime(cooldownSeconds);
+
+    const timer = setInterval(() => {
+      setCooldownTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsInCooldown(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Auto-reset retry count after longest cooldown
+    cooldownTimeoutRef.current = setTimeout(() => {
+      setRetryCount(0);
+    }, cooldownDurations[cooldownDurations.length - 1] * 1000);
+
+    return () => {
+      clearInterval(timer);
+      if (cooldownTimeoutRef.current) {
+        clearTimeout(cooldownTimeoutRef.current);
+      }
+    };
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isInCooldown) return;
     setLoading(true);
+
     try {
-      await signInWithPhone(phone);
+      const verifier = await setupRecaptcha();
+      const formattedPhone = `+91${phone}`;
+      
+      const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      window.confirmationResult = confirmationResult;
+      
       setStep('otp');
-    } catch (error) {
-      console.error(error);
+      toast.success('OTP sent successfully!');
+      
+      // Reset retry count on success
+      setRetryCount(0);
+    } catch (error: any) {
+      console.error('Error sending OTP:', error);
+      
+      if (error.code === 'auth/too-many-requests') {
+        setRetryCount(prev => prev + 1);
+        startCooldown(retryCount);
+        toast.error('Too many attempts. Please try again later.');
+      } else if (error.code === 'auth/invalid-phone-number') {
+        toast.error('Please enter a valid phone number');
+      } else {
+        toast.error('Failed to send OTP. Please try again.');
+      }
+      
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const formatPhoneNumber = (number: string) => {
+    return `+91 ${number.slice(0, 5)} ${number.slice(5)}`;
+  };
+
+  useEffect(() => {
+    if (otp.length === 6 && !loading) {
+      setIsAutoVerifying(true);
+      handleVerifyOtp();
+    }
+  }, [otp]);
+
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
+    
     setLoading(true);
     try {
-      await verifyOtp(otp);
-      onLoginSuccess();
-    } catch (error) {
-      console.error(error);
+      const confirmationResult = window.confirmationResult;
+      if (!confirmationResult) {
+        throw new Error('Please request OTP first');
+      }
+
+      const result = await confirmationResult.confirm(otp);
+      if (result.user) {
+        // Get user token
+        const idToken = await result.user.getIdToken();
+        
+        // Check if user exists in Firestore
+        const userDocRef = doc(db, 'users', result.user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          // Update existing user
+          await setDoc(userDocRef, {
+            lastLoginAt: new Date().toISOString(),
+            phone: result.user.phoneNumber,
+          }, { merge: true });
+        } else {
+          // Create new user
+          await setDoc(userDocRef, {
+            phone: result.user.phoneNumber,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            onboardingComplete: false
+          });
+        }
+
+        toast.success('Successfully logged in!');
+        onLoginSuccess();
+        onClose();
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Invalid OTP');
+      setOtp(''); // Clear OTP on error
     } finally {
       setLoading(false);
+      setIsAutoVerifying(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!('OTPCredential' in window) || step !== 'otp') return;
+
+    const ac = new AbortController();
+    
+    navigator.credentials.get({
+      otp: { transport: ['sms'] },
+      signal: ac.signal
+    } as CredentialRequestOptions).then((otp: any) => {
+      if (otp?.code && !ac.signal.aborted) {
+        setOtp(otp.code);
+        setAutofilledOtp(otp.code);
+      }
+    }).catch((err) => {
+      if (err.name !== 'AbortError') {
+        console.error('OTP Error:', err);
+      }
+    });
+
+    return () => {
+      try {
+        ac.abort();
+      } catch (err) {
+        // Ignore abort errors
+      }
+    };
+  }, [step]);
+
+  const copyOtpFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const otpMatch = text.match(/\b(\d{6})\b/);
+      if (otpMatch) {
+        setOtp(otpMatch[0]);
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard:', err);
     }
   };
 
@@ -125,13 +334,21 @@ export default function LoginBottomSheet({ isOpen, onClose, onLoginSuccess }: Lo
 
                   <button
                     type="submit"
-                    disabled={loading || phone.length !== 10}
+                    disabled={loading || phone.length !== 10 || isInCooldown}
                     className="w-full bg-black text-white p-4 rounded-xl flex items-center 
                              justify-center gap-2 disabled:opacity-50 text-lg font-medium
                              hover:opacity-90 active:scale-[0.99] transition-all"
                   >
-                    {loading ? 'Sending OTP...' : 'Continue'}
-                    <ArrowRight className="w-5 h-5" />
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        Sending...
+                      </span>
+                    ) : isInCooldown ? (
+                      `Try again in ${cooldownTime}s`
+                    ) : (
+                      'Continue'
+                    )}
                   </button>
                 </motion.form>
               )}
@@ -147,7 +364,7 @@ export default function LoginBottomSheet({ isOpen, onClose, onLoginSuccess }: Lo
                 >
                   <div className="space-y-6">
                     <label className="block text-base text-gray-600">
-                      Enter the OTP sent to +91 {phone}
+                      Enter the OTP sent to {formatPhoneNumber(phone)}
                     </label>
                     <OtpInput
                       value={otp}
@@ -156,38 +373,71 @@ export default function LoginBottomSheet({ isOpen, onClose, onLoginSuccess }: Lo
                       renderInput={(props) => (
                         <input
                           {...props}
-                          className="w-14 h-14 mx-1 text-center text-lg border rounded-xl 
-                                   bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black/5"
+                          className="!w-12 h-14 mx-1 text-center border rounded-xl text-lg
+                                   focus:border-black focus:ring-1 focus:ring-black 
+                                   transition-colors [webkit-text-security:disc]"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          pattern="\d*"
+                          disabled={loading || isAutoVerifying}
                         />
                       )}
                       shouldAutoFocus
+                      containerStyle="flex justify-center gap-2"
                     />
+                    {autofilledOtp && (
+                      <p className="text-sm text-center text-gray-500">
+                        OTP auto-filled: {autofilledOtp}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-4">
                     <button
                       type="submit"
-                      disabled={loading || otp.length !== 6}
+                      disabled={loading || isAutoVerifying || otp.length !== 6}
                       className="w-full bg-black text-white p-4 rounded-xl flex items-center 
                                justify-center gap-2 disabled:opacity-50 text-lg font-medium
                                hover:opacity-90 active:scale-[0.99] transition-all"
                     >
-                      {loading ? 'Verifying...' : 'Verify & Continue'}
-                      <ArrowRight className="w-5 h-5" />
+                      {loading || isAutoVerifying ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          Verify & Continue
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setStep('phone')}
+                      onClick={() => {
+                        setStep('phone');
+                        setOtp('');
+                      }}
                       className="w-full text-center text-base text-gray-500 hover:text-black transition-colors"
                     >
                       ← Change phone number
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={copyOtpFromClipboard}
+                      className="mt-2 text-sm text-gray-500 hover:text-black"
+                    >
+                      Paste from clipboard
                     </button>
                   </div>
                 </motion.form>
               )}
             </div>
           </motion.div>
+          <div id="recaptcha-container"></div>
         </>
       )}
     </AnimatePresence>

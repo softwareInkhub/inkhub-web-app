@@ -5,11 +5,25 @@ import Image from 'next/image';
 interface OrderSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: any; // Replace with proper type
+  order: {
+    id: string;
+    name: string;
+    created_at: string;
+    financial_status: string;
+    fulfillment_status: string;
+    line_items: Array<{
+      id: string;
+      title: string;
+      quantity: number;
+      price: string | number;
+      image?: string;
+    }>;
+    total_price: string | number;
+  };
 }
 
 export default function OrderSummaryModal({ isOpen, onClose, order }: OrderSummaryModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen || !order) return null;
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">

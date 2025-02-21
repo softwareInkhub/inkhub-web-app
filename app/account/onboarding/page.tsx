@@ -39,11 +39,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        router.replace('/account/login');
+        router.replace('/'); // Redirect to home instead of login
       } else if (userProfile?.onboardingComplete) {
-        // Get stored return URL or default to profile
-        const returnUrl = sessionStorage.getItem('returnUrl') || '/account';
-        sessionStorage.removeItem('returnUrl'); // Clean up
+        const returnUrl = sessionStorage.getItem('returnUrl') || '/';
+        sessionStorage.removeItem('returnUrl');
         router.replace(returnUrl);
       }
     }
