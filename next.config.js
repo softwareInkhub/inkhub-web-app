@@ -17,7 +17,7 @@ const nextConfig = {
   },
   // Change output to 'standalone' instead of 'export'
   output: 'standalone',
-  distDir: 'dist',
+  distDir: '.next',
   trailingSlash: true,
   async rewrites() {
     return [

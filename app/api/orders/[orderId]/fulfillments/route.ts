@@ -8,10 +8,12 @@ export async function generateStaticParams() {
   try {
     const query = `
       query {
-        orders(first: 100) {
-          edges {
-            node {
-              id
+        customer {
+          orders(first: 100) {
+            edges {
+              node {
+                id
+              }
             }
           }
         }
@@ -19,16 +21,18 @@ export async function generateStaticParams() {
     `;
 
     const data = await storefrontClient.request<{
-      orders: {
-        edges: Array<{
-          node: {
-            id: string;
-          };
-        }>;
+      customer: {
+        orders: {
+          edges: Array<{
+            node: {
+              id: string;
+            };
+          }>;
+        };
       };
     }>(query);
 
-    return data.orders.edges.map(({ node }) => ({
+    return (data.customer?.orders?.edges || []).map(({ node }) => ({
       orderId: node.id.split('/').pop()
     }));
   } catch (error) {

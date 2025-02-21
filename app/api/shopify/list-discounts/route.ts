@@ -8,32 +8,19 @@ export async function GET() {
   try {
     const query = `
       query {
-        codeDiscountNodes(first: 10) {
+        discountNodes(first: 10) {
           edges {
             node {
               id
-              codeDiscount {
+              discount {
                 ... on DiscountCodeBasic {
                   title
-                  codes(first: 1) {
-                    edges {
-                      node {
-                        code
-                      }
-                    }
-                  }
+                  code
                   startsAt
                   endsAt
                   customerSelection {
                     ... on DiscountCustomerAll {
                       allCustomers
-                    }
-                  }
-                  customerGets {
-                    value {
-                      ... on DiscountPercentage {
-                        percentage
-                      }
                     }
                   }
                 }
@@ -48,9 +35,6 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching discount codes:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch discount codes' }, { status: 500 });
   }
 } 
