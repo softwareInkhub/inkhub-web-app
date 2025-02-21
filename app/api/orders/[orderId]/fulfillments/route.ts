@@ -1,86 +1,29 @@
 import { NextResponse } from 'next/server';
-import { storefrontClient } from '@/utils/shopify';
-
-export const dynamic = 'force-static';
-export const revalidate = 3600; // Revalidate every hour
-
-export async function generateStaticParams() {
-  try {
-    const query = `
-      query {
-        customer {
-          orders(first: 100) {
-            edges {
-              node {
-                id
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const data = await storefrontClient.request<{
-      customer: {
-        orders: {
-          edges: Array<{
-            node: {
-              id: string;
-            };
-          }>;
-        };
-      };
-    }>(query);
-
-    return (data.customer?.orders?.edges || []).map(({ node }) => ({
-      orderId: node.id.split('/').pop()
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
-}
+import { db } from '@/utils/firebase-admin';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     orderId: string;
-  };
+  }>;
 }
 
 export async function GET(
   request: Request,
-  context: RouteContext & { params: Promise<RouteContext['params']> }
+  context: RouteContext
 ) {
   try {
     const { orderId } = await context.params;
-    const query = `
-      query GetOrderFulfillments($orderId: ID!) {
-        node(id: $orderId) {
-          ... on Order {
-            id
-            fulfillments {
-              id
-              status
-              trackingInfo {
-                number
-                url
-              }
-            }
-          }
-        }
-      }
-    `;
+    const fulfillmentRef = db.collection('orders').doc(orderId).collection('fulfillments');
+    const snapshot = await fulfillmentRef.get();
 
-    const data = await storefrontClient.request(query, {
-      orderId: `gid://shopify/Order/${orderId}`
-    });
+    const fulfillments = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
 
-    return NextResponse.json(data);
+    return NextResponse.json({ fulfillments });
   } catch (error) {
-    console.error('Error fetching fulfillments:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch fulfillment details' }, { status: 500 });
   }
 }
