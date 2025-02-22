@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import BackButton from './BackButton';
 
 export function ProductView({ product }: { product: any }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -9,14 +8,6 @@ export function ProductView({ product }: { product: any }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="sticky top-0 z-10 bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="h-12 flex items-center">
-            <BackButton />
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 py-4 mb-20">
         <div className="space-y-4">
           {/* Product Images */}

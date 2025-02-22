@@ -1,6 +1,4 @@
 import { getProductByHandle, getAllProducts } from '@/utils/shopify';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import ProductDetails from '@/components/ProductDetails';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
@@ -46,16 +44,6 @@ export default async function ProductPage({ params }: PageProps) {
 
     return (
       <div className="min-h-screen bg-white">
-        <div className="px-4 py-6 sm:px-6 border-b">
-          <Link 
-            href="/"
-            className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Back
-          </Link>
-        </div>
-
         <ProductDetails 
           product={product}
           products={products || []}

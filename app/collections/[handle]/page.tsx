@@ -1,6 +1,5 @@
 import { storefrontClient } from '@/utils/shopify';
 import ProductCard from '@/components/ProductCard';
-import BackButton from '@/components/BackButton';
 
 interface PageProps {
   params: Promise<{ handle: string }>
@@ -102,7 +101,6 @@ export default async function CollectionPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-16 animate-fade-in">
-      <BackButton />
       <h1 className="text-4xl font-bold mb-4">{collection.title}</h1>
       {collection.description && (
         <p className="text-gray-600 mb-8">{collection.description}</p>
