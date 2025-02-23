@@ -5,19 +5,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, ArrowRight, Share } from 'lucide-react';
 
 export default function InstallPWA() {
-  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [showIOSPrompt, setShowIOSPrompt] = useState<boolean | null>(null);
   
   useEffect(() => {
-    // Check if it's iOS
+    // Check localStorage only once on mount
+    const hasShownPrompt = localStorage.getItem('hasShownPWAPrompt');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     
-    if (isIOS && !isStandalone) {
-      setShowIOSPrompt(true);
-    }
-  }, []);
+    // Only show if:
+    // 1. Never shown before
+    // 2. Is iOS device
+    // 3. Not already installed
+    setShowIOSPrompt(!hasShownPrompt && isIOS && !isStandalone);
+  }, []); // Empty dependency array ensures this runs only once
 
-  if (!showIOSPrompt) return null;
+  const handleClose = () => {
+    setShowIOSPrompt(false);
+    localStorage.setItem('hasShownPWAPrompt', 'true');
+  };
+
+  // Don't render anything until we've checked the conditions
+  if (showIOSPrompt === null || !showIOSPrompt) return null;
 
   return (
     <AnimatePresence>
@@ -26,14 +35,14 @@ export default function InstallPWA() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={() => setShowIOSPrompt(false)}
+        onClick={handleClose}
       >
         <motion.div
           className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 relative"
           onClick={e => e.stopPropagation()}
         >
           <button 
-            onClick={() => setShowIOSPrompt(false)}
+            onClick={handleClose}
             className="absolute top-4 right-4 p-2"
           >
             <X className="w-4 h-4" />
@@ -57,7 +66,7 @@ export default function InstallPWA() {
             </div>
 
             <button
-              onClick={() => setShowIOSPrompt(false)}
+              onClick={handleClose}
               className="w-full bg-black text-white rounded-xl py-3 font-medium"
             >
               Got it

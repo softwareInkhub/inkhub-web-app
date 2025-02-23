@@ -1,4 +1,5 @@
 'use client';
+import { AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import Navbar from "@/components/Navbar";
 import { CartProvider } from "@/context/CartContext";
@@ -10,6 +11,8 @@ import { TabProvider } from '@/context/TabContext';
 import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import { ThemeProvider } from '@/context/ThemeContext';
+import InstallPWA from '@/components/InstallPWA';
+import FloatingNav from '@/components/FloatingNav';
 
 export default function RootLayoutClient({
   children,
@@ -27,7 +30,9 @@ export default function RootLayoutClient({
           <CartProvider>
             <WishlistProvider>
               <ThemeProvider>
-                {content}
+                <AnimatePresence mode="wait">
+                  {content}
+                </AnimatePresence>
                 <Toaster position="bottom-center" />
               </ThemeProvider>
             </WishlistProvider>
@@ -44,11 +49,17 @@ export default function RootLayoutClient({
   return withProviders(
     <div className="min-h-screen flex flex-col">
       <Navbar collections={[]} />
-      <main className="flex-1 w-full">
-        {children}
+      <main className="flex-1 w-full overflow-hidden">
+        <AnimatePresence mode="wait">
+          <div key={pathname}>
+            {children}
+          </div>
+        </AnimatePresence>
       </main>
+      <FloatingNav />
       <Footer />
       <BottomNav />
+      <InstallPWA />
     </div>
   );
 } 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ShopifyCollection } from '@/types/shopify';
 import { useEffect } from 'react';
 import ProductCard from '../ProductCard';
+import SimpleProductCard from '../SimpleProductCard';
 
 interface CollectionsSliderProps {
   collections: ShopifyCollection[];
@@ -72,24 +73,25 @@ export default function CollectionsSlider({
             <p className="text-sm text-red-500">{error}</p>
           </div>
         ) : selectedCollectionProducts.length > 0 ? (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {selectedCollectionProducts.map((product) => (
-              <ProductCard
+              <SimpleProductCard
                 key={product.id}
                 product={{
                   id: product.id,
                   handle: product.handle,
                   title: product.title,
                   price: {
-                    amount: product.price,
+                    amount: product.price.amount || '0',
                     currencyCode: 'INR'
                   },
                   image: {
-                    url: product.image?.url || '',
+                    url: product.image?.url || '/placeholder.jpg',
                     altText: product.image?.altText || product.title
                   },
-                  variantId: product.variantId || product.id // Adjust based on your data structure
+                  variantId: product.variantId || product.id
                 }}
+                className="aspect-[1/1.2]"
               />
             ))}
           </div>

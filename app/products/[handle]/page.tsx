@@ -2,6 +2,7 @@ import { getProductByHandle, getAllProducts } from '@/utils/shopify';
 import ProductDetails from '@/components/ProductDetails';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import PageTransition from '@/components/PageTransition';
 
 // Update generateStaticParams to handle all products
 export async function generateStaticParams() {
@@ -27,6 +28,7 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ handle: string }>;
+  searchParams?: Promise<any>;
 }
 
 export default async function ProductPage({ params }: PageProps) {
@@ -43,12 +45,12 @@ export default async function ProductPage({ params }: PageProps) {
     }
 
     return (
-      <div className="min-h-screen bg-white">
+      <PageTransition>
         <ProductDetails 
           product={product}
           products={products || []}
         />
-      </div>
+      </PageTransition>
     );
   } catch (error) {
     console.error(`Error loading product with handle ${handle}:`, error);
@@ -56,11 +58,9 @@ export default async function ProductPage({ params }: PageProps) {
   }
 }
 
-export async function generateMetadata(
-  { params }: PageProps
-): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { handle } = await params;
   try {
-    const { handle } = await params;
     const product = await getProductByHandle(handle);
 
     if (!product) {

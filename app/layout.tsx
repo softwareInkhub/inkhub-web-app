@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import RootLayoutClient from "./RootLayoutClient";
-import InstallPWA from '@/components/InstallPWA';
 import { inter } from './fonts'
 
 export const metadata: Metadata = {
@@ -29,7 +28,6 @@ export default function RootLayout({
         <RootLayoutClient>
           {children}
         </RootLayoutClient>
-        <InstallPWA />
       </body>
     </html>
   );

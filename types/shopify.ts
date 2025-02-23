@@ -7,10 +7,12 @@ export interface ShopifyCollection {
   id: string;
   title: string;
   handle: string;
+  description?: string;
   image?: {
     url: string;
     altText?: string;
   } | null;
+  products_count: number;
   products?: {
     edges: Array<{
       node: {
